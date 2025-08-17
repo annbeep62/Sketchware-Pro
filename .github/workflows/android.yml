@@ -67,6 +67,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           cache-disabled: false
+          cache-key-prefix: gradle-${{ runner.os }}
 
       - name: Build Release APK
         env:
