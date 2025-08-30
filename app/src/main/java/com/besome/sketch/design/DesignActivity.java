@@ -445,6 +445,8 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             sc_id = savedInstanceState.getString("sc_id");
         }
 
+        Configs.currentProjectID = sc_id;
+
         r = new DB(getApplicationContext(), "P1");
         t = new DB(getApplicationContext(), "P12");
 
@@ -465,10 +467,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
 
         btnRun = findViewById(R.id.btn_run);
         btnRun.setOnClickListener(v -> {
-            if (currentBuildTask != null && !currentBuildTask.canceled && !currentBuildTask.isBuildFinished) {
+            if (currentBuildTask != null && !currentBuildTask.canceled) {
                 currentBuildTask.cancelBuild();
                 return;
             }
+
+            if (currentBuildTask != null && !currentBuildTask.isBuildFinished) return;
 
             BuildTask buildTask = new BuildTask(this);
             currentBuildTask = buildTask;
@@ -516,7 +520,14 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             toViewCodeEditor();
             return true;
         });
-        bottomPopupMenu.setOnDismissListener(menu -> btnOptions.setChecked(false));
+
+        bottomPopupMenu.setOnDismissListener(new PopupMenu.OnDismissListener() {
+            @Override
+            public void onDismiss(PopupMenu menu) {
+                btnOptions.setChecked(false);
+            }
+        });
+
 
         xmlLayoutOrientation = findViewById(R.id.img_orientation);
         viewPager = findViewById(R.id.viewpager);
@@ -1185,9 +1196,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 }
 
                 activity.installBuiltApk();
-                isBuildFinished = true;
             } catch (MissingFileException e) {
-                isBuildFinished = true;
                 activity.runOnUiThread(() -> {
                     boolean isMissingDirectory = e.isMissingDirectory();
 
@@ -1213,13 +1222,13 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                     dialog.show();
                 });
             } catch (zy zy) {
-                isBuildFinished = true;
                 activity.indicateCompileErrorOccurred(zy.getMessage());
             } catch (Throwable tr) {
-                isBuildFinished = true;
                 LogUtil.e("DesignActivity$BuildTask", "Failed to build project", tr);
                 activity.indicateCompileErrorOccurred(Log.getStackTraceString(tr));
             } finally {
+                isBuildFinished = true;
+                canceled = false;
                 activity.runOnUiThread(this::onPostExecute);
             }
         }
